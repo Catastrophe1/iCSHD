@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-09 13:48:38
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-13 16:57:08
+@LastEditTime: 2019-07-13 17:06:07
 @Description: Implement the GUI of iCSHD
 '''
 
@@ -215,7 +215,7 @@ class MainWindow(QMainWindow):
         from iCSHD_Case, iCSHD_Customer, iCSHD_Engineer
         where iCSHD_Case.CustomerId = iCSHD_Customer.CustomerId
           and iCSHD_Customer.CustomerId = '%s'
-	      and iCSHD_Case.EngineerId = iCSHD_Engineer.EngineerId
+          and iCSHD_Case.EngineerId = iCSHD_Engineer.EngineerId
         ''' % customerID
 
         cur.execute(sql)
