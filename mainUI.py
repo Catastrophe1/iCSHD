@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-09 13:48:38
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-12 15:04:30
+@LastEditTime: 2019-07-13 16:57:08
 @Description: Implement the GUI of iCSHD
 '''
 
@@ -16,20 +16,38 @@ from PyQt5.QtWidgets import (QWidget, QPushButton, QScrollArea, QTextEdit, QLabe
                              QHBoxLayout, QVBoxLayout, QMainWindow, QApplication)
 
 class CaseButton(QPushButton):
-    def __init__(self, text, caseAge, idleTime, customerSentimental, recentCPE, parent=None):
-        super().__init__(text, parent)
-        self.caseAge   = caseAge
-        self.idleTime  = idleTime
-        self.recentCPE = recentCPE
-        self.customerSentimental = customerSentimental
+    def __init__(self, parent=None, **kwargs):
+        super().__init__(kwargs.get('buttonText', ""), parent)
+
+        self.SLA = kwargs.get('SLA', 'default SLA')
+        self.FDR = kwargs.get('FDR', 'default FDR')
+        self.labor = kwargs.get('labor', 123)
+        self.owner = kwargs.get('owner', "")
+        self.caseAge = kwargs.get('caseAge', 0)
+        self.idleTime = kwargs.get('idleTime', 0)
+        self.recentCPE = kwargs.get('recentCPE', 0)
+        self.isResolved = kwargs.get('isResolved', 0)
+        self.ongoingCases = kwargs.get('ongoingCases', 3)
+        self.estimatedScore = kwargs.get('estimatedScore', 5)
+        self.productSupported = kwargs.get('productSupported', "")
+        self.customerSentimental = kwargs.get('customerSentimental', 0)
 
 class CustomerInfo(QWidget):
-    def __init__(self, name, email, SurveyProbability, relatedCases, parent=None):
+    def __init__(self, parent=None, **kwargs):
         super().__init__(parent)
+
+        TAM = kwargs.get('TAM', "default TAM")
+        name = kwargs.get('name', "")
+        email = kwargs.get('email', "")
+        company = kwargs.get('company', "")
+        relatedCases = kwargs.get('relatedCases', [])
+        engineerAlias = kwargs.get('engineerAlias', "")
+        estimatedScore = kwargs.get('estimatedScore', 5)
+        surveyProbability = kwargs.get('surveyProbability', 0)
 
         # Initialize parameters
         custBtnWidth  = 400
-        custBtnHeight = 100
+        custBtnHeight = 200
         caseBtnWidth  = 200
         caseBtnHeight = 50
         suggestEditorWidth  = 400
@@ -41,8 +59,11 @@ class CustomerInfo(QWidget):
         vbox = QVBoxLayout()
 
         # TODO: Customize the shape of the button
+        # TODO: Show long company name
         # Cutomer button
-        buttonText = "Customer: %s\nEmail: %s\nSurveyProbability: %s%%" % (name, email, SurveyProbability)
+        buttonText = ("Customer: %s\nEmail: %s\nCompany: %s\nTAM: %s\n"
+                    + "Survey Probability: %s%%\nEstimated score: %s") \
+                    % (name, email, company, TAM, surveyProbability, estimatedScore)
         custBtn = QPushButton(buttonText, self)
         custBtn.setFixedSize(custBtnWidth, custBtnHeight)
         hbox.addWidget(custBtn)
@@ -50,13 +71,28 @@ class CustomerInfo(QWidget):
         # Case buttons
         for case in relatedCases:
             # Take the first five characters of CaseID as the name of the CaseButton
-            caseBtn = CaseButton("CaseID: %s" % case[0][0:5], case[1], case[2], case[3], case[4], self)
+            caseBtn = CaseButton(self,
+                                 buttonText="CaseID: %s" % case[0][0:5],
+                                 caseAge=case[1],
+                                 idleTime=case[2],
+                                 customerSentimental=case[3],
+                                 productSupported=case[4],
+                                 recentCPE=case[5],
+                                 isResolved=case[6],
+                                 owner=case[7])
 
-            # Set font color to red if the case hasn't been resolved
-            if case[5] == 1:
-                caseBtn.setStyleSheet("color: green")
+            # if the case hase been resolved
+            if caseBtn.isResolved == 1:
+                # if the case belong to current engineer
+                if caseBtn.owner == engineerAlias:
+                    caseBtn.setStyleSheet("color: green; border: 2px groove blue;")
+                else:
+                    caseBtn.setStyleSheet("color: green")
             else:
-                caseBtn.setStyleSheet("color: red")
+                if caseBtn.owner == engineerAlias:
+                    caseBtn.setStyleSheet("color: red; border: 2px groove blue;")
+                else:
+                    caseBtn.setStyleSheet("color: red")
 
             caseBtn.setToolTip(case[0])
             caseBtn.setFixedSize(caseBtnWidth, caseBtnHeight)
@@ -87,17 +123,30 @@ class CustomerInfo(QWidget):
         # Turn on the interactive mode. plt.show() is not needed in interactive mode.
         plt.ion()
 
-        data = np.array([caseBtn.caseAge, caseBtn.idleTime, caseBtn.customerSentimental, caseBtn.recentCPE])
+        data = np.array([caseBtn.caseAge, caseBtn.idleTime, caseBtn.labor, caseBtn.customerSentimental,
+                         caseBtn.recentCPE, caseBtn.ongoingCases])
         labels = [str(i) for i in data]
         data = np.concatenate((data, [data[0]]))
         angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False)
         angles = np.concatenate((angles, [angles[0]]))
-        fig = plt.figure()
-        ax = fig.add_subplot(111, polar=True)
-        ax.plot(angles, data, 'ro-', linewidth=2)
-        ax.set_thetagrids(angles * 180 / np.pi, labels)
-        ax.set_title("Customer Analysis", va='bottom')
-        ax.grid(True)
+
+        fig = plt.figure(figsize=(18, 6))
+
+        ax1 = fig.add_subplot(121, polar=True)
+        ax1.plot(angles, data, 'ro-', linewidth=2)
+        ax1.set_thetagrids(angles * 180 / np.pi, labels)
+        ax1.set_title("Customer Analysis", va='bottom')
+        ax1.grid(True)
+
+        # TODO: Hidden the row label
+        ax2 = fig.add_subplot(122)
+        plt.axis("off")
+        colLabels = ['Information']
+        rowLabels = ['Owner','Product','SLA', 'FDR', 'IsResolved', 'EstimatedScore']
+        cellText = [[caseBtn.owner], [caseBtn.productSupported], [caseBtn.SLA],
+                    [caseBtn.FDR], [caseBtn.isResolved], [caseBtn.estimatedScore]]
+        ax2.table(cellText=cellText, rowLabels=rowLabels,
+                  colLabels=colLabels, cellLoc='center', loc='center')
 
         # Turn off the interactive mode
         plt.ioff()
@@ -122,11 +171,13 @@ class MainWindow(QMainWindow):
         vbox = QVBoxLayout()
 
         for customer in relatedCustomers:
-            vbox.addWidget(CustomerInfo(customer[1],
-                                        customer[2],
-                                        customer[3],
-                                        self.getRelatedCase(customer[0]),
-                                        scrollWidget))
+            vbox.addWidget(CustomerInfo(scrollWidget,
+                                        relatedCases=self.getRelatedCase(customer[0]),
+                                        name=customer[1],
+                                        email=customer[2],
+                                        surveyProbability=customer[3],
+                                        company=customer[4],
+                                        engineerAlias=self.alias))
 
         scrollWidget.setLayout(vbox)
         scrollArea = QScrollArea()
@@ -142,7 +193,8 @@ class MainWindow(QMainWindow):
         cur = self.conn.cursor()
 
         sql = '''
-        select iCSHD_Customer.CustomerId, iCSHD_Customer.Name, Email, SurveyProbability
+        select distinct iCSHD_Customer.CustomerId, iCSHD_Customer.Name,
+                        Email, SurveyProbability, Company
         from iCSHD_Case, iCSHD_Customer, iCSHD_Engineer
         where iCSHD_Case.CustomerId = iCSHD_Customer.CustomerId
           and iCSHD_Case.EngineerId = iCSHD_Engineer.EngineerId
@@ -158,9 +210,12 @@ class MainWindow(QMainWindow):
         cur = self.conn.cursor()
 
         sql = '''
-        select CaseId, CaseAge, IdleTime, CustomerSentimental, RecentCPE, IsResolved
-        from iCSHD_Case, iCSHD_Customer
-        where iCSHD_Case.CustomerId = iCSHD_Customer.CustomerId and iCSHD_Customer.CustomerId = '%s'
+        select CaseId, CaseAge, IdleTime, CustomerSentimental,
+               ProductSupported, RecentCPE, IsResolved, Alias
+        from iCSHD_Case, iCSHD_Customer, iCSHD_Engineer
+        where iCSHD_Case.CustomerId = iCSHD_Customer.CustomerId
+          and iCSHD_Customer.CustomerId = '%s'
+	      and iCSHD_Case.EngineerId = iCSHD_Engineer.EngineerId
         ''' % customerID
 
         cur.execute(sql)
