@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-09 13:48:38
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-14 15:26:44
+@LastEditTime: 2019-07-14 15:30:02
 @Description: Implement the GUI of iCSHD
 '''
 
@@ -103,7 +103,7 @@ class MainWindow(QMainWindow):
                                      user=user,
                                      password=password,
                                      database=database)
-    
+
     def searchCase(self):
         self.searchWin = SearchCaseWin(self.sqlcon)
         self.searchWin.show()
