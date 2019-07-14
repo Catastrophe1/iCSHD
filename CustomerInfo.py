@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-13 23:06:18
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-14 14:29:30
+@LastEditTime: 2019-07-14 15:26:01
 @Description: file content
 '''
 
@@ -98,10 +98,10 @@ class CustomerInfo(QWidget):
         hbox.addLayout(vbox)
 
         # Suggest editor
-        suggestEditor = QTextEdit(self)
-        suggestEditor.setPlaceholderText("Enter your suggestion here")
-        suggestEditor.setFixedSize(suggestEditorWidth, suggestEditorHeight)
-        hbox.addWidget(suggestEditor)
+        self.suggestEditor = QTextEdit(self)
+        self.suggestEditor.setPlaceholderText("AI suggestion")
+        self.suggestEditor.setFixedSize(suggestEditorWidth, suggestEditorHeight)
+        hbox.addWidget(self.suggestEditor)
 
         # Comment editor
         commentEditor = QTextEdit(self)
@@ -116,6 +116,10 @@ class CustomerInfo(QWidget):
         import matplotlib.pyplot as plt
 
         caseBtn = self.sender()
+
+        # Get suggestions from AI
+        suggestion = self.getSuggestionFromAI(caseBtn)
+        self.suggestEditor.setText(suggestion)
 
         # Turn on the interactive mode. plt.show() is not needed in interactive mode.
         plt.ion()
@@ -151,3 +155,18 @@ class CustomerInfo(QWidget):
 
         # Turn off the interactive mode
         plt.ioff()
+    
+    def getSuggestionFromAI(self, caseBtn):
+        suggestion = ""
+
+        # TODO: Better algorithm
+        if caseBtn.idleTime > 3:
+            suggestion += "Idle Time is too large!\n"
+        if caseBtn.caseAge > 3000:
+            suggestion += "Case Age is too large!\n"
+        if caseBtn.customerSentimental < 20:
+            suggestion += "Customer Sentimental is too small!\n"
+        if caseBtn.labor > 600:
+            suggestion += "Labor Time is too large!\n"
+        
+        return suggestion

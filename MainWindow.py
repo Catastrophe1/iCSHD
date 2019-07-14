@@ -4,14 +4,14 @@
 @Author: t-zhel
 @Date: 2019-07-09 13:48:38
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-14 14:31:29
+@LastEditTime: 2019-07-14 15:26:44
 @Description: Implement the GUI of iCSHD
 '''
 
 import sys
 import pyodbc
+from CustomerInfo import CustomerInfo
 from SearchCaseWin import SearchCaseWin
-from CustomerInfoWidget import CustomerInfo
 from PyQt5.QtWidgets import (QWidget, QScrollArea, QAction, QVBoxLayout,
                              QMainWindow, QApplication)
 
@@ -99,10 +99,10 @@ class MainWindow(QMainWindow):
         password = 'PasSw0rd01'
         database = 'SDCasesTEST'
         self.sqlcon = pyodbc.connect(driver=driver,
-                                   server=server,
-                                   user=user,
-                                   password=password,
-                                   database=database)
+                                     server=server,
+                                     user=user,
+                                     password=password,
+                                     database=database)
     
     def searchCase(self):
         self.searchWin = SearchCaseWin(self.sqlcon)
