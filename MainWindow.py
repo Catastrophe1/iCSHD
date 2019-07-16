@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-09 13:48:38
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-14 15:30:02
+@LastEditTime: 2019-07-16 23:46:09
 @Description: Implement the GUI of iCSHD
 '''
 
@@ -54,7 +54,7 @@ class MainWindow(QMainWindow):
         scrollArea.setWidget(scrollWidget)
         self.setCentralWidget(scrollArea)
 
-        self.resize(1550, 1000)
+        self.resize(1620, 1000)
         self.setWindowTitle('Current Engineer: %s' % self.alias)
 
 
@@ -80,7 +80,7 @@ class MainWindow(QMainWindow):
         cur = self.sqlcon.cursor()
 
         sql = '''
-        select CaseId, CaseAge, IdleTime, CustomerSentimental,
+        select CaseNumber, CaseAge, IdleTime, CustomerSentimental,
                ProductSupported, RecentCPE, IsResolved, Alias
         from iCSHD_Case, iCSHD_Customer, iCSHD_Engineer
         where iCSHD_Case.CustomerId = iCSHD_Customer.CustomerId

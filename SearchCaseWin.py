@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-13 23:05:14
 @LastEditTime: 2019-07-13 23:16:01
-@LastEditTime: 2019-07-14 14:23:24
+@LastEditTime: 2019-07-16 23:49:41
 @Description: file content
 '''
 
@@ -54,7 +54,7 @@ class SearchLineWidget(QWidget):
         cur = self.sqlcon.cursor()
 
         sql = '''
-        select * from iCSHD_Case where CaseId = '%s'
+        select * from iCSHD_Case where CaseNumber = '%s'
         ''' % self.textEdit.text()
 
         cur.execute(sql)

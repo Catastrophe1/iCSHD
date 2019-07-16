@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-13 23:06:18
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-14 15:26:01
+@LastEditTime: 2019-07-16 23:48:07
 @Description: file content
 '''
 
@@ -39,14 +39,13 @@ class CustomerInfo(QWidget):
         company = kwargs.get('company', "")
         relatedCases = kwargs.get('relatedCases', [])
         engineerAlias = kwargs.get('engineerAlias', "")
-        estimatedScore = kwargs.get('estimatedScore', 5)
         surveyProbability = kwargs.get('surveyProbability', 0)
 
         # Initialize parameters
         custBtnWidth  = 400
-        custBtnHeight = 200
-        caseBtnWidth  = 200
-        caseBtnHeight = 50
+        custBtnHeight = 150
+        caseBtnWidth  = 270
+        caseBtnHeight = 150
         suggestEditorWidth  = 400
         suggestEditorHeight = 200
         commentEditorWidth  = 400
@@ -58,18 +57,33 @@ class CustomerInfo(QWidget):
         # TODO: Customize the shape of the button
         # TODO: Show long company name
         # Cutomer button
-        buttonText = ("Customer: %s\nEmail: %s\nCompany: %s\nTAM: %s\n"
-                    + "Survey Probability: %s%%\nEstimated score: %s") \
-                    % (name, email, company, TAM, surveyProbability, estimatedScore)
+        buttonText = ("Customer: %s\nEmail: %s\nCompany: %s\nTAM: %s\nSurvey Probability: %s%%") \
+                   % (name, email, company, TAM, surveyProbability)
         custBtn = QPushButton(buttonText, self)
         custBtn.setFixedSize(custBtnWidth, custBtnHeight)
         hbox.addWidget(custBtn)
 
+        # Place the cases belong to current engineer in front of the list
+        for i in range(0, len(relatedCases)):
+            for j in range(i + 1, len(relatedCases)):
+                if relatedCases[j][7] == engineerAlias:
+                    relatedCases[i], relatedCases[j] = relatedCases[j], relatedCases[i]
+
         # Case buttons
         for case in relatedCases:
-            # Take the first five characters of CaseID as the name of the CaseButton
+            # Do not show the case if it has been resolved
+            if case[6] == 1:
+                continue
+
+            estimatedScore = self.getEstimatedScoreFromAI(case)
+
+            surveyProbability = self.getSurveyProbability(case)
+
+            buttonText = "CaseID: %s\nEstimated Score: %s\nCase Owner: %s\nSurvey Probability: %s%%" \
+                         % (case[0], estimatedScore, case[7], surveyProbability)
+
             caseBtn = CaseButton(self,
-                                 buttonText="CaseID: %s" % case[0][0:5],
+                                 buttonText=buttonText,
                                  caseAge=case[1],
                                  idleTime=case[2],
                                  customerSentimental=case[3],
@@ -78,20 +92,10 @@ class CustomerInfo(QWidget):
                                  isResolved=case[6],
                                  owner=case[7])
 
-            # if the case hase been resolved
-            if caseBtn.isResolved == 1:
-                # if the case belong to current engineer
-                if caseBtn.owner == engineerAlias:
-                    caseBtn.setStyleSheet("color: green; border: 2px groove blue;")
-                else:
-                    caseBtn.setStyleSheet("color: green")
-            else:
-                if caseBtn.owner == engineerAlias:
-                    caseBtn.setStyleSheet("color: red; border: 2px groove blue;")
-                else:
-                    caseBtn.setStyleSheet("color: red")
+            # if the case belong to current engineer
+            if caseBtn.owner == engineerAlias:
+                caseBtn.setStyleSheet("color: green; border: 2px groove blue;")
 
-            caseBtn.setToolTip(case[0])
             caseBtn.setFixedSize(caseBtnWidth, caseBtnHeight)
             caseBtn.clicked.connect(self.showGraph)
             vbox.addWidget(caseBtn)
@@ -109,7 +113,9 @@ class CustomerInfo(QWidget):
         commentEditor.setFixedSize(commentEditorWidth, commentEditorHeight)
         hbox.addWidget(commentEditor)
 
-        self.setLayout(hbox)
+        # If the customer has opening cases
+        if vbox.count():
+            self.setLayout(hbox)
 
     def showGraph(self):
         # TODO: why must import pyplot here
@@ -143,19 +149,29 @@ class CustomerInfo(QWidget):
         ax1.set_title("Customer Analysis", va='bottom')
         ax1.grid(True)
 
-        # TODO: Hidden the row label
         ax2 = fig.add_subplot(122)
-        plt.axis("off")
-        colLabels = ['Information']
+        plt.axis("off") # Hidden the axis
+        row_colors = ['green'] * 6
         rowLabels = ['Owner','Product','SLA', 'FDR', 'IsResolved', 'EstimatedScore']
         cellText = [[caseBtn.owner], [caseBtn.productSupported], [caseBtn.SLA],
                     [caseBtn.FDR], [caseBtn.isResolved], [caseBtn.estimatedScore]]
-        ax2.table(cellText=cellText, rowLabels=rowLabels,
-                  colLabels=colLabels, cellLoc='center', loc='center')
+        table = ax2.table(cellText=cellText, rowLabels=rowLabels, rowColours=row_colors,
+                          cellLoc='center', loc='center', bbox=[0.25, 0.25, 0.5, 0.5])
+        table.set_fontsize(15)
+
+        # Set the color of the font of cell
+        # for i in range(len(rowLabels)):
+        #     table._cells[(i, 0)]._text.set_color('red')
+        table._cells[(5, 0)]._text.set_color('red')
+
+        # Set the color of row labels
+        tableProps = table.properties()
+        tableCells = tableProps['child_artists']
+        tableCells[len(tableCells) - 1]._text.set_color('yellow')
 
         # Turn off the interactive mode
         plt.ioff()
-    
+
     def getSuggestionFromAI(self, caseBtn):
         suggestion = ""
 
@@ -168,5 +184,11 @@ class CustomerInfo(QWidget):
             suggestion += "Customer Sentimental is too small!\n"
         if caseBtn.labor > 600:
             suggestion += "Labor Time is too large!\n"
-        
+
         return suggestion
+
+    def getEstimatedScoreFromAI(self, case):
+        return 5
+
+    def getSurveyProbability(self, case):
+        return 50
