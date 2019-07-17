@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-09 13:48:38
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-17 21:41:50
+@LastEditTime: 2019-07-17 21:47:14
 @Description: Implement the GUI of iCSHD
 '''
 
@@ -51,14 +51,13 @@ class MainWindow(QMainWindow):
         self.resize(1620, 1000)
         self.setWindowTitle('Current Engineer: %s' % self.alias)
 
-
     def getRelatedCustomer(self, engineerAlias):
         print('Getting the information of all related customers')
         cur = self.sqlcon.cursor()
 
         sql = '''
         select distinct iCSHD_Customer.CustomerId, iCSHD_Customer.Name,
-                        Email, SurveyProbability, Company
+                        Email, SurveyProbability, Company, TAM
         from iCSHD_Case, iCSHD_Customer, iCSHD_Engineer
         where iCSHD_Case.CustomerId = iCSHD_Customer.CustomerId
           and iCSHD_Case.EngineerId = iCSHD_Engineer.EngineerId

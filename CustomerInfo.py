@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-13 23:06:18
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-17 21:42:46
+@LastEditTime: 2019-07-17 21:47:16
 @Description: file content
 '''
 
@@ -46,7 +46,7 @@ class CustomerInfo(QWidget):
         email = customer[2]
         surveyProbability = customer[3]
         company = customer[4]
-        tam = "Default TAM"
+        tam = customer[5]
         relatedCases = self.getRelatedCase(customerID)
 
         # Initialize parameters
