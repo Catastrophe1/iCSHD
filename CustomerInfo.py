@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-13 23:06:18
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-17 21:55:57
+@LastEditTime: 2019-07-17 23:48:41
 @Description: file content
 '''
 
@@ -73,6 +73,7 @@ class CustomerInfo(QWidget):
 
         self.paramsScore = self.getCustomerScoreParameter(customerID)
         self.paramsSurvey = self.getCustomerSurveyParameter(customerID)
+        self.aveWeek = self.getWeeklyAverage(customerID)
 
         # Place the cases belong to current engineer in front of the list
         for i in range(0, len(relatedCases)):
@@ -131,19 +132,26 @@ class CustomerInfo(QWidget):
 
         fig = plt.figure(figsize=(18, 6))
 
-        labels = ["CaseAge: "+str(caseBtn.caseAge), "Idle Time: "+str(caseBtn.idleTime),
-                  "Labor: "+str(caseBtn.labor), "Cust Senti: "+str(caseBtn.customerSentimental),
-                  "Recent CPE: "+str(caseBtn.recentCPE), "Ongoing Cases: "+str(caseBtn.ongoingCases)]
-        data = np.array([caseBtn.caseAge, caseBtn.idleTime, caseBtn.labor, caseBtn.customerSentimental,
-                         caseBtn.recentCPE, caseBtn.ongoingCases])
-        data = np.concatenate((data, [data[0]]))
+        labels = ["Case Age", "Idle Time", "Labor", "Cust Senti", "Recent CPE", "Ongoing Cases"]
+        value = [caseBtn.caseAge, caseBtn.idleTime, caseBtn.labor, caseBtn.customerSentimental,
+                 caseBtn.recentCPE, caseBtn.ongoingCases]
+        value = np.concatenate((value, [value[0]]))
+        aveWeek = self.aveWeek
+        aveWeek = np.concatenate((aveWeek, [aveWeek[0]]))
         angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False)
         angles = np.concatenate((angles, [angles[0]]))
+
         ax1 = fig.add_subplot(121, polar=True)
-        ax1.plot(angles, data, 'ro-', linewidth=2)
-        ax1.set_thetagrids(angles * 180 / np.pi, labels, fontsize='15', color='green')
-        ax1.set_title("Customer Analysis", va='bottom')
+        ax1.plot(angles, value, 'o-', linewidth=2, label='Current Case')
+        ax1.fill(angles, value, alpha=0.25)
+        ax1.plot(angles, aveWeek, 'o-', linewidth=2, label='Average of Last Week')
+        ax1.fill(angles, aveWeek, alpha=0.25)
+
+        ax1.set_thetagrids(angles * 180 / np.pi, labels, fontsize='15', color='blue')
+        ax1.set_ylim(0, np.max([np.max(value), np.max(aveWeek)]))
+        ax1.set_title('Customer Analysis')
         ax1.grid(True)
+        ax1.legend(loc = 'upper right')
 
         ax2 = fig.add_subplot(122)
         plt.axis("off") # Hidden the axis
@@ -221,3 +229,6 @@ class CustomerInfo(QWidget):
 
     def getCustomerSurveyParameter(self, customerID):
         return
+    
+    def getWeeklyAverage(self, customerID):
+        return [50, 50, 30, 40, 60, 160]
