@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-13 23:06:18
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-17 21:47:16
+@LastEditTime: 2019-07-17 21:55:57
 @Description: file content
 '''
 
@@ -171,8 +171,11 @@ class CustomerInfo(QWidget):
     def showParams(self):
         import matplotlib.pyplot as plt
         plt.ion()
-        plt.bar(range(len(self.paramsScore)), self.paramsScore)
-        plt.show()
+        fig = plt.figure(figsize=(18, 6))
+        ax = plt.subplot(111)
+        labels = ['Cust Senti','Recent CPE','Labor', 'Case Age', 'Idle Time',
+                  'Ongoing Cases', 'SLA', 'FDR', 'Resolved']
+        ax.bar(range(len(self.paramsScore)), self.paramsScore, tick_label=labels)
         plt.ioff()
 
     def getSuggestionFromAI(self, caseBtn):
