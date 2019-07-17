@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-13 23:06:18
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-16 23:48:07
+@LastEditTime: 2019-07-17 21:42:46
 @Description: file content
 '''
 
@@ -13,33 +13,41 @@ from PyQt5.QtWidgets import (QWidget, QPushButton, QTextEdit,
                              QHBoxLayout, QVBoxLayout)
 
 class CaseButton(QPushButton):
-    def __init__(self, parent=None, **kwargs):
-        super().__init__(kwargs.get('buttonText', ""), parent)
-
-        self.SLA = kwargs.get('SLA', 'default SLA')
-        self.FDR = kwargs.get('FDR', 'default FDR')
-        self.labor = kwargs.get('labor', 123)
-        self.owner = kwargs.get('owner', "")
-        self.caseAge = kwargs.get('caseAge', 0)
-        self.idleTime = kwargs.get('idleTime', 0)
-        self.recentCPE = kwargs.get('recentCPE', 0)
-        self.isResolved = kwargs.get('isResolved', 0)
-        self.ongoingCases = kwargs.get('ongoingCases', 3)
-        self.estimatedScore = kwargs.get('estimatedScore', 5)
-        self.productSupported = kwargs.get('productSupported', "")
-        self.customerSentimental = kwargs.get('customerSentimental', 0)
-
-class CustomerInfo(QWidget):
-    def __init__(self, parent=None, **kwargs):
+    def __init__(self, case, estimatedScore, surveyProbability, parent=None):
         super().__init__(parent)
 
-        TAM = kwargs.get('TAM', "default TAM")
-        name = kwargs.get('name', "")
-        email = kwargs.get('email', "")
-        company = kwargs.get('company', "")
-        relatedCases = kwargs.get('relatedCases', [])
-        engineerAlias = kwargs.get('engineerAlias', "")
-        surveyProbability = kwargs.get('surveyProbability', 0)
+        self.caseNumber = case[0]
+        self.caseAge = case[1]
+        self.idleTime = case[2]
+        self.customerSentimental = case[3]
+        self.productSupported = case[4]
+        self.recentCPE = case[5]
+        self.isResolved = case[6]
+        self.owner = case[7]
+        self.isSLA = case[8]
+        self.isFDR = case[9]
+        self.labor = 123
+        self.ongoingCases = 3
+        self.estimatedScore = estimatedScore
+        self.surveyProbability = surveyProbability
+
+        buttonText = "CaseID: %s\nEstimated Score: %s\nCase Owner: %s\nSurvey Probability: %s%%" \
+                    % (self.caseNumber, self.estimatedScore, self.owner, self.surveyProbability)
+        self.setText(buttonText)
+
+class CustomerInfo(QWidget):
+    def __init__(self, sqlcon, customer, engineerAlias, parent=None):
+        super().__init__(parent)
+
+        self.sqlcon = sqlcon
+
+        customerID = customer[0]
+        name = customer[1]
+        email = customer[2]
+        surveyProbability = customer[3]
+        company = customer[4]
+        tam = "Default TAM"
+        relatedCases = self.getRelatedCase(customerID)
 
         # Initialize parameters
         custBtnWidth  = 400
@@ -55,13 +63,16 @@ class CustomerInfo(QWidget):
         vbox = QVBoxLayout()
 
         # TODO: Customize the shape of the button
-        # TODO: Show long company name
         # Cutomer button
         buttonText = ("Customer: %s\nEmail: %s\nCompany: %s\nTAM: %s\nSurvey Probability: %s%%") \
-                   % (name, email, company, TAM, surveyProbability)
+                   % (name, email, company, tam, surveyProbability)
         custBtn = QPushButton(buttonText, self)
         custBtn.setFixedSize(custBtnWidth, custBtnHeight)
+        custBtn.clicked.connect(self.showParams)
         hbox.addWidget(custBtn)
+
+        self.paramsScore = self.getCustomerScoreParameter(customerID)
+        self.paramsSurvey = self.getCustomerSurveyParameter(customerID)
 
         # Place the cases belong to current engineer in front of the list
         for i in range(0, len(relatedCases)):
@@ -75,22 +86,10 @@ class CustomerInfo(QWidget):
             if case[6] == 1:
                 continue
 
-            estimatedScore = self.getEstimatedScoreFromAI(case)
+            estimatedScore = self.getEstimatedScoreFromAI(case, self.paramsScore)
+            surveyProbability = self.getSurveyProbability(case, self.paramsSurvey)
 
-            surveyProbability = self.getSurveyProbability(case)
-
-            buttonText = "CaseID: %s\nEstimated Score: %s\nCase Owner: %s\nSurvey Probability: %s%%" \
-                         % (case[0], estimatedScore, case[7], surveyProbability)
-
-            caseBtn = CaseButton(self,
-                                 buttonText=buttonText,
-                                 caseAge=case[1],
-                                 idleTime=case[2],
-                                 customerSentimental=case[3],
-                                 productSupported=case[4],
-                                 recentCPE=case[5],
-                                 isResolved=case[6],
-                                 owner=case[7])
+            caseBtn = CaseButton(case, estimatedScore, surveyProbability, self)
 
             # if the case belong to current engineer
             if caseBtn.owner == engineerAlias:
@@ -130,22 +129,19 @@ class CustomerInfo(QWidget):
         # Turn on the interactive mode. plt.show() is not needed in interactive mode.
         plt.ion()
 
-        labels = ["CaseAge: "+str(caseBtn.caseAge), "Idle Time: "+str(caseBtn.idleTime),
-                  "labor: "+str(caseBtn.labor), "Cust Senti: "+str(caseBtn.customerSentimental),
-                  "Recent CPE: "+str(caseBtn.recentCPE), "Ongoing Cases: "+str(caseBtn.ongoingCases)]
+        fig = plt.figure(figsize=(18, 6))
 
+        labels = ["CaseAge: "+str(caseBtn.caseAge), "Idle Time: "+str(caseBtn.idleTime),
+                  "Labor: "+str(caseBtn.labor), "Cust Senti: "+str(caseBtn.customerSentimental),
+                  "Recent CPE: "+str(caseBtn.recentCPE), "Ongoing Cases: "+str(caseBtn.ongoingCases)]
         data = np.array([caseBtn.caseAge, caseBtn.idleTime, caseBtn.labor, caseBtn.customerSentimental,
                          caseBtn.recentCPE, caseBtn.ongoingCases])
         data = np.concatenate((data, [data[0]]))
-
         angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False)
         angles = np.concatenate((angles, [angles[0]]))
-
-        fig = plt.figure(figsize=(18, 6))
-
         ax1 = fig.add_subplot(121, polar=True)
         ax1.plot(angles, data, 'ro-', linewidth=2)
-        ax1.set_thetagrids(angles * 180 / np.pi, labels)
+        ax1.set_thetagrids(angles * 180 / np.pi, labels, fontsize='15', color='green')
         ax1.set_title("Customer Analysis", va='bottom')
         ax1.grid(True)
 
@@ -153,8 +149,8 @@ class CustomerInfo(QWidget):
         plt.axis("off") # Hidden the axis
         row_colors = ['green'] * 6
         rowLabels = ['Owner','Product','SLA', 'FDR', 'IsResolved', 'EstimatedScore']
-        cellText = [[caseBtn.owner], [caseBtn.productSupported], [caseBtn.SLA],
-                    [caseBtn.FDR], [caseBtn.isResolved], [caseBtn.estimatedScore]]
+        cellText = [[caseBtn.owner], [caseBtn.productSupported], [caseBtn.isSLA],
+                    [caseBtn.isFDR], [caseBtn.isResolved], [caseBtn.estimatedScore]]
         table = ax2.table(cellText=cellText, rowLabels=rowLabels, rowColours=row_colors,
                           cellLoc='center', loc='center', bbox=[0.25, 0.25, 0.5, 0.5])
         table.set_fontsize(15)
@@ -172,6 +168,13 @@ class CustomerInfo(QWidget):
         # Turn off the interactive mode
         plt.ioff()
 
+    def showParams(self):
+        import matplotlib.pyplot as plt
+        plt.ion()
+        plt.bar(range(len(self.paramsScore)), self.paramsScore)
+        plt.show()
+        plt.ioff()
+
     def getSuggestionFromAI(self, caseBtn):
         suggestion = ""
 
@@ -187,8 +190,31 @@ class CustomerInfo(QWidget):
 
         return suggestion
 
-    def getEstimatedScoreFromAI(self, case):
+    def getRelatedCase(self, customerID):
+        print('Getting all related cases')
+        cur = self.sqlcon.cursor()
+
+        sql = '''
+        select CaseNumber, CaseAge, IdleTime, CustomerSentimental, ProductSupported,
+               RecentCPE, IsResolved, Alias, SlaState, isFDR
+        from iCSHD_Case, iCSHD_Customer, iCSHD_Engineer
+        where iCSHD_Case.CustomerId = iCSHD_Customer.CustomerId
+          and iCSHD_Customer.CustomerId = '%s'
+          and iCSHD_Case.EngineerId = iCSHD_Engineer.EngineerId
+        ''' % customerID
+
+        cur.execute(sql)
+        print('Done')
+        return cur.fetchall()
+
+    def getEstimatedScoreFromAI(self, case, params):
         return 5
 
-    def getSurveyProbability(self, case):
+    def getSurveyProbability(self, case, params):
         return 50
+
+    def getCustomerScoreParameter(self, customerID):
+        return [1.5, 0.6, 7.8, 6, 5.2, 6.6, 3.1, 2.7, 1.9]
+
+    def getCustomerSurveyParameter(self, customerID):
+        return

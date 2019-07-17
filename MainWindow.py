@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-09 13:48:38
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-16 23:46:09
+@LastEditTime: 2019-07-17 21:41:50
 @Description: Implement the GUI of iCSHD
 '''
 
@@ -41,13 +41,7 @@ class MainWindow(QMainWindow):
         vbox = QVBoxLayout()
 
         for customer in relatedCustomers:
-            vbox.addWidget(CustomerInfo(scrollWidget,
-                                        relatedCases=self.getRelatedCase(customer[0]),
-                                        name=customer[1],
-                                        email=customer[2],
-                                        surveyProbability=customer[3],
-                                        company=customer[4],
-                                        engineerAlias=self.alias))
+            vbox.addWidget(CustomerInfo(self.sqlcon, customer, self.alias, scrollWidget))
 
         scrollWidget.setLayout(vbox)
         scrollArea = QScrollArea()
@@ -70,23 +64,6 @@ class MainWindow(QMainWindow):
           and iCSHD_Case.EngineerId = iCSHD_Engineer.EngineerId
           and iCSHD_Engineer.Alias = '%s'
         ''' % engineerAlias
-
-        cur.execute(sql)
-        print('Done')
-        return cur.fetchall()
-
-    def getRelatedCase(self, customerID):
-        print('Getting all related cases')
-        cur = self.sqlcon.cursor()
-
-        sql = '''
-        select CaseNumber, CaseAge, IdleTime, CustomerSentimental,
-               ProductSupported, RecentCPE, IsResolved, Alias
-        from iCSHD_Case, iCSHD_Customer, iCSHD_Engineer
-        where iCSHD_Case.CustomerId = iCSHD_Customer.CustomerId
-          and iCSHD_Customer.CustomerId = '%s'
-          and iCSHD_Case.EngineerId = iCSHD_Engineer.EngineerId
-        ''' % customerID
 
         cur.execute(sql)
         print('Done')
