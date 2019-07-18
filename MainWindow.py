@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-09 13:48:38
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-17 21:47:14
+@LastEditTime: 2019-07-18 16:30:55
 @Description: Implement the GUI of iCSHD
 '''
 
@@ -52,7 +52,6 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Current Engineer: %s' % self.alias)
 
     def getRelatedCustomer(self, engineerAlias):
-        print('Getting the information of all related customers')
         cur = self.sqlcon.cursor()
 
         sql = '''
@@ -65,7 +64,6 @@ class MainWindow(QMainWindow):
         ''' % engineerAlias
 
         cur.execute(sql)
-        print('Done')
         return cur.fetchall()
 
     def initSqlServer(self):

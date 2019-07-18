@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-13 23:06:18
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-17 23:48:41
+@LastEditTime: 2019-07-18 16:32:03
 @Description: file content
 '''
 
@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (QWidget, QPushButton, QTextEdit,
                              QHBoxLayout, QVBoxLayout)
 
 class CaseButton(QPushButton):
-    def __init__(self, case, estimatedScore, surveyProbability, parent=None):
+    def __init__(self, case, estimatedScore, surveyProbability, ongoingAveSenti, parent=None):
         super().__init__(parent)
 
         self.caseNumber = case[0]
@@ -26,10 +26,66 @@ class CaseButton(QPushButton):
         self.owner = case[7]
         self.isSLA = case[8]
         self.isFDR = case[9]
-        self.labor = 123
-        self.ongoingCases = 3
+        self.labor = case[10]
+        self.ongoingCases = ongoingAveSenti
         self.estimatedScore = estimatedScore
         self.surveyProbability = surveyProbability
+
+        if self.caseAge <= 3:
+            self.caseAge = 5
+        elif self.caseAge > 3 and self.caseAge <= 7:
+            self.caseAge = 4
+        elif self.caseAge > 7 and self.caseAge <= 14:
+            self.caseAge = 3
+        elif self.caseAge > 14 and self.caseAge <= 30:
+            self.caseAge = 2
+        elif self.caseAge > 30:
+            self.caseAge = 1
+
+        self.idleTime /= 24 * 60
+        if self.idleTime <= 1:
+            self.idleTime = 5
+        elif self.idleTime > 1 and self.idleTime <= 3:
+            self.idleTime = 4
+        elif self.idleTime > 3 and self.idleTime <= 7:
+            self.idleTime = 3
+        elif self.idleTime > 7 and self.idleTime <= 14:
+            self.idleTime = 2
+        elif self.idleTime > 14:
+            self.idleTime = 1
+
+        if self.customerSentimental <= 30:
+            self.customerSentimental = 1
+        elif self.customerSentimental > 30 and self.customerSentimental <= 60:
+            self.customerSentimental = 2
+        elif self.customerSentimental > 60 and self.customerSentimental <= 75:
+            self.customerSentimental = 3
+        elif self.customerSentimental > 75 and self.customerSentimental <= 90:
+            self.customerSentimental = 4
+        elif self.customerSentimental > 90:
+            self.customerSentimental = 5
+
+        if self.labor <= 600:
+            self.labor = 5
+        elif self.labor > 600 and self.labor <= 1200:
+            self.labor = 4
+        elif self.labor > 1200 and self.labor <= 3000:
+            self.labor = 3
+        elif self.labor > 3000 and self.labor <= 6000:
+            self.labor = 2
+        elif self.labor > 6000:
+            self.labor = 1
+
+        if self.ongoingCases <= 30:
+            self.ongoingCases = 1
+        elif self.ongoingCases > 30 and self.ongoingCases <= 60:
+            self.ongoingCases = 2
+        elif self.ongoingCases > 60 and self.ongoingCases <= 75:
+            self.ongoingCases = 3
+        elif self.ongoingCases > 75 and self.ongoingCases <= 90:
+            self.ongoingCases = 4
+        elif self.ongoingCases > 90:
+            self.ongoingCases = 5
 
         buttonText = "CaseID: %s\nEstimated Score: %s\nCase Owner: %s\nSurvey Probability: %s%%" \
                     % (self.caseNumber, self.estimatedScore, self.owner, self.surveyProbability)
@@ -89,8 +145,9 @@ class CustomerInfo(QWidget):
 
             estimatedScore = self.getEstimatedScoreFromAI(case, self.paramsScore)
             surveyProbability = self.getSurveyProbability(case, self.paramsSurvey)
+            ongoingAveSenti = self.getOngoingCasesAverageSentimental(customerID, engineerAlias)
 
-            caseBtn = CaseButton(case, estimatedScore, surveyProbability, self)
+            caseBtn = CaseButton(case, estimatedScore, surveyProbability, ongoingAveSenti, self)
 
             # if the case belong to current engineer
             if caseBtn.owner == engineerAlias:
@@ -148,10 +205,10 @@ class CustomerInfo(QWidget):
         ax1.fill(angles, aveWeek, alpha=0.25)
 
         ax1.set_thetagrids(angles * 180 / np.pi, labels, fontsize='15', color='blue')
-        ax1.set_ylim(0, np.max([np.max(value), np.max(aveWeek)]))
+        ax1.set_ylim(0, 5)
         ax1.set_title('Customer Analysis')
         ax1.grid(True)
-        ax1.legend(loc = 'upper right')
+        ax1.legend(loc='best')
 
         ax2 = fig.add_subplot(122)
         plt.axis("off") # Hidden the axis
@@ -164,8 +221,6 @@ class CustomerInfo(QWidget):
         table.set_fontsize(15)
 
         # Set the color of the font of cell
-        # for i in range(len(rowLabels)):
-        #     table._cells[(i, 0)]._text.set_color('red')
         table._cells[(5, 0)]._text.set_color('red')
 
         # Set the color of row labels
@@ -202,12 +257,11 @@ class CustomerInfo(QWidget):
         return suggestion
 
     def getRelatedCase(self, customerID):
-        print('Getting all related cases')
         cur = self.sqlcon.cursor()
 
         sql = '''
         select CaseNumber, CaseAge, IdleTime, CustomerSentimental, ProductSupported,
-               RecentCPE, IsResolved, Alias, SlaState, isFDR
+               RecentCPE, IsResolved, Alias, SlaState, isFDR, LABOR
         from iCSHD_Case, iCSHD_Customer, iCSHD_Engineer
         where iCSHD_Case.CustomerId = iCSHD_Customer.CustomerId
           and iCSHD_Customer.CustomerId = '%s'
@@ -215,8 +269,22 @@ class CustomerInfo(QWidget):
         ''' % customerID
 
         cur.execute(sql)
-        print('Done')
         return cur.fetchall()
+
+    def getOngoingCasesAverageSentimental(self, customerID, engineerAlias):
+        cur = self.sqlcon.cursor()
+        sql = '''
+        select AVG(CustomerSentimental)
+        from iCSHD_Case, iCSHD_Customer, iCSHD_Engineer
+        where iCSHD_Case.CustomerId = iCSHD_Customer.CustomerId
+          and iCSHD_Case.EngineerId = iCSHD_Engineer.EngineerId
+          and iCSHD_Customer.CustomerId = '%s'
+          and iCSHD_Engineer.Alias != '%s'
+          and iCSHD_Case.IsResolved = 0
+        ''' % (customerID, engineerAlias)
+        cur.execute(sql)
+        res = cur.fetchall()[0][0]
+        return res if res else 100
 
     def getEstimatedScoreFromAI(self, case, params):
         return 5
@@ -229,6 +297,6 @@ class CustomerInfo(QWidget):
 
     def getCustomerSurveyParameter(self, customerID):
         return
-    
+
     def getWeeklyAverage(self, customerID):
-        return [50, 50, 30, 40, 60, 160]
+        return [1, 2, 3, 4, 5, 3]
