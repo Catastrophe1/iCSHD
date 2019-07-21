@@ -4,13 +4,14 @@
 @Author: t-zhel
 @Date: 2019-07-13 23:06:18
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-21 14:34:39
+@LastEditTime: 2019-07-21 15:19:46
 @Description: file content
 '''
 
 import numpy as np
 from PyQt5.QtWidgets import (QWidget, QPushButton, QTextEdit,
-                             QHBoxLayout, QVBoxLayout)
+                             QHBoxLayout, QVBoxLayout, QMessageBox)
+from PyQt5.QtCore import Qt
 
 class CaseButton(QPushButton):
     def __init__(self, case, estimatedScore, surveyProbability, ongoingAveSenti, aveWeek, parent=None):
@@ -93,6 +94,71 @@ class CaseButton(QPushButton):
                     % (self.caseNumber, self.tam, self.estimatedScore, self.owner, self.surveyProbability)
         self.setText(buttonText)
 
+    def mousePressEvent(self, QMouseEvent):
+        if QMouseEvent.button() == Qt.LeftButton:
+            self.showGraph()
+        elif QMouseEvent.button() == Qt.RightButton:
+            self.setStyleSheet("")
+            QMessageBox.information(self, 'Message', 'Your comment has been saved', QMessageBox.Yes)
+            self.setStyleSheet("color: green; border: 2px groove blue;")
+  
+    def showGraph(self):
+        # TODO: why must import pyplot here
+        import matplotlib.pyplot as plt
+
+        custoInfo = self.parent()
+
+        # Get suggestions from AI
+        suggestion = custoInfo.getSuggestionFromAI(self)
+        custoInfo.suggestEditor.setText(suggestion)
+
+        # Turn on the interactive mode. plt.show() is not needed in interactive mode.
+        plt.ion()
+
+        fig = plt.figure(figsize=(18, 6))
+
+        labels = ["Case Age", "Idle Time", "Labor", "Cust Senti", "Recent CPE", "Ongoing Cases"]
+        value = [self.caseAge, self.idleTime, self.labor, self.customerSentimental,
+                 self.recentCPE, self.ongoingCases]
+        value = np.concatenate((value, [value[0]]))
+        aveWeek = [1, 2, 3, 4, 5, 3]
+        aveWeek = np.concatenate((aveWeek, [aveWeek[0]]))
+        angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False)
+        angles = np.concatenate((angles, [angles[0]]))
+
+        ax1 = fig.add_subplot(121, polar=True)
+        ax1.plot(angles, value, 'o-', linewidth=2, label='Current Case')
+        ax1.fill(angles, value, alpha=0.25)
+        ax1.plot(angles, aveWeek, 'o-', linewidth=2, label='Average of Last Week')
+        ax1.fill(angles, aveWeek, alpha=0.25)
+
+        ax1.set_thetagrids(angles * 180 / np.pi, labels, fontsize='15', color='blue')
+        ax1.set_ylim(0, 5)
+        ax1.set_title('Customer Analysis')
+        ax1.grid(True)
+        ax1.legend(loc='best')
+
+        ax2 = fig.add_subplot(122)
+        plt.axis("off") # Hidden the axis
+        row_colors = ['green'] * 6
+        rowLabels = ['Owner','Product','SLA', 'FDR', 'IsResolved', 'EstimatedScore']
+        cellText = [[self.owner], [self.productSupported], [self.isSLA],
+                    [self.isFDR], [self.isResolved], [self.estimatedScore]]
+        table = ax2.table(cellText=cellText, rowLabels=rowLabels, rowColours=row_colors,
+                          cellLoc='center', loc='center', bbox=[0.25, 0.25, 0.5, 0.5])
+        table.set_fontsize(15)
+
+        # Set the color of the font of cell
+        table._cells[(5, 0)]._text.set_color('red')
+
+        # Set the color of row labels
+        tableProps = table.properties()
+        tableCells = tableProps['child_artists']
+        tableCells[len(tableCells) - 1]._text.set_color('yellow')
+
+        # Turn off the interactive mode
+        plt.ioff()
+
 class CustomerInfo(QWidget):
     def __init__(self, sqlcon, customer, engineerAlias, parent=None):
         super().__init__(parent)
@@ -154,7 +220,7 @@ class CustomerInfo(QWidget):
                 caseBtn.setStyleSheet("color: green; border: 2px groove blue;")
 
             caseBtn.setFixedSize(caseBtnWidth, caseBtnHeight)
-            caseBtn.clicked.connect(self.showGraph)
+            # caseBtn.clicked.connect(self.showGraph)
             vbox.addWidget(caseBtn)
         hbox.addLayout(vbox)
 
@@ -174,62 +240,62 @@ class CustomerInfo(QWidget):
         if vbox.count():
             self.setLayout(hbox)
 
-    def showGraph(self):
-        # TODO: why must import pyplot here
-        import matplotlib.pyplot as plt
+    # def showGraph(self):
+    #     # TODO: why must import pyplot here
+    #     import matplotlib.pyplot as plt
 
-        caseBtn = self.sender()
+    #     caseBtn = self.sender()
 
-        # Get suggestions from AI
-        suggestion = self.getSuggestionFromAI(caseBtn)
-        self.suggestEditor.setText(suggestion)
+    #     # Get suggestions from AI
+    #     suggestion = self.getSuggestionFromAI(caseBtn)
+    #     self.suggestEditor.setText(suggestion)
 
-        # Turn on the interactive mode. plt.show() is not needed in interactive mode.
-        plt.ion()
+    #     # Turn on the interactive mode. plt.show() is not needed in interactive mode.
+    #     plt.ion()
 
-        fig = plt.figure(figsize=(18, 6))
+    #     fig = plt.figure(figsize=(18, 6))
 
-        labels = ["Case Age", "Idle Time", "Labor", "Cust Senti", "Recent CPE", "Ongoing Cases"]
-        value = [caseBtn.caseAge, caseBtn.idleTime, caseBtn.labor, caseBtn.customerSentimental,
-                 caseBtn.recentCPE, caseBtn.ongoingCases]
-        value = np.concatenate((value, [value[0]]))
-        aveWeek = [1, 2, 3, 4, 5, 3]
-        aveWeek = np.concatenate((aveWeek, [aveWeek[0]]))
-        angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False)
-        angles = np.concatenate((angles, [angles[0]]))
+    #     labels = ["Case Age", "Idle Time", "Labor", "Cust Senti", "Recent CPE", "Ongoing Cases"]
+    #     value = [caseBtn.caseAge, caseBtn.idleTime, caseBtn.labor, caseBtn.customerSentimental,
+    #              caseBtn.recentCPE, caseBtn.ongoingCases]
+    #     value = np.concatenate((value, [value[0]]))
+    #     aveWeek = [1, 2, 3, 4, 5, 3]
+    #     aveWeek = np.concatenate((aveWeek, [aveWeek[0]]))
+    #     angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False)
+    #     angles = np.concatenate((angles, [angles[0]]))
 
-        ax1 = fig.add_subplot(121, polar=True)
-        ax1.plot(angles, value, 'o-', linewidth=2, label='Current Case')
-        ax1.fill(angles, value, alpha=0.25)
-        ax1.plot(angles, aveWeek, 'o-', linewidth=2, label='Average of Last Week')
-        ax1.fill(angles, aveWeek, alpha=0.25)
+    #     ax1 = fig.add_subplot(121, polar=True)
+    #     ax1.plot(angles, value, 'o-', linewidth=2, label='Current Case')
+    #     ax1.fill(angles, value, alpha=0.25)
+    #     ax1.plot(angles, aveWeek, 'o-', linewidth=2, label='Average of Last Week')
+    #     ax1.fill(angles, aveWeek, alpha=0.25)
 
-        ax1.set_thetagrids(angles * 180 / np.pi, labels, fontsize='15', color='blue')
-        ax1.set_ylim(0, 5)
-        ax1.set_title('Customer Analysis')
-        ax1.grid(True)
-        ax1.legend(loc='best')
+    #     ax1.set_thetagrids(angles * 180 / np.pi, labels, fontsize='15', color='blue')
+    #     ax1.set_ylim(0, 5)
+    #     ax1.set_title('Customer Analysis')
+    #     ax1.grid(True)
+    #     ax1.legend(loc='best')
 
-        ax2 = fig.add_subplot(122)
-        plt.axis("off") # Hidden the axis
-        row_colors = ['green'] * 6
-        rowLabels = ['Owner','Product','SLA', 'FDR', 'IsResolved', 'EstimatedScore']
-        cellText = [[caseBtn.owner], [caseBtn.productSupported], [caseBtn.isSLA],
-                    [caseBtn.isFDR], [caseBtn.isResolved], [caseBtn.estimatedScore]]
-        table = ax2.table(cellText=cellText, rowLabels=rowLabels, rowColours=row_colors,
-                          cellLoc='center', loc='center', bbox=[0.25, 0.25, 0.5, 0.5])
-        table.set_fontsize(15)
+    #     ax2 = fig.add_subplot(122)
+    #     plt.axis("off") # Hidden the axis
+    #     row_colors = ['green'] * 6
+    #     rowLabels = ['Owner','Product','SLA', 'FDR', 'IsResolved', 'EstimatedScore']
+    #     cellText = [[caseBtn.owner], [caseBtn.productSupported], [caseBtn.isSLA],
+    #                 [caseBtn.isFDR], [caseBtn.isResolved], [caseBtn.estimatedScore]]
+    #     table = ax2.table(cellText=cellText, rowLabels=rowLabels, rowColours=row_colors,
+    #                       cellLoc='center', loc='center', bbox=[0.25, 0.25, 0.5, 0.5])
+    #     table.set_fontsize(15)
 
-        # Set the color of the font of cell
-        table._cells[(5, 0)]._text.set_color('red')
+    #     # Set the color of the font of cell
+    #     table._cells[(5, 0)]._text.set_color('red')
 
-        # Set the color of row labels
-        tableProps = table.properties()
-        tableCells = tableProps['child_artists']
-        tableCells[len(tableCells) - 1]._text.set_color('yellow')
+    #     # Set the color of row labels
+    #     tableProps = table.properties()
+    #     tableCells = tableProps['child_artists']
+    #     tableCells[len(tableCells) - 1]._text.set_color('yellow')
 
-        # Turn off the interactive mode
-        plt.ioff()
+    #     # Turn off the interactive mode
+    #     plt.ioff()
 
     def showParams(self):
         import matplotlib.pyplot as plt
