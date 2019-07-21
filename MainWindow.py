@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-09 13:48:38
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-18 16:30:55
+@LastEditTime: 2019-07-21 14:13:16
 @Description: Implement the GUI of iCSHD
 '''
 
@@ -14,6 +14,7 @@ from CustomerInfo import CustomerInfo
 from SearchCaseWin import SearchCaseWin
 from PyQt5.QtWidgets import (QWidget, QScrollArea, QAction, QVBoxLayout,
                              QMainWindow, QApplication)
+from PyQt5.QtGui import QIcon
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -49,6 +50,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(scrollArea)
 
         self.resize(1620, 1000)
+        self.setWindowIcon(QIcon('./assets/logo.png'))
         self.setWindowTitle('Current Engineer: %s' % self.alias)
 
     def getRelatedCustomer(self, engineerAlias):

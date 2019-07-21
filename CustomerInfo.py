@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-13 23:06:18
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-18 16:32:03
+@LastEditTime: 2019-07-21 14:20:29
 @Description: file content
 '''
 
@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (QWidget, QPushButton, QTextEdit,
                              QHBoxLayout, QVBoxLayout)
 
 class CaseButton(QPushButton):
-    def __init__(self, case, estimatedScore, surveyProbability, ongoingAveSenti, parent=None):
+    def __init__(self, case, estimatedScore, surveyProbability, ongoingAveSenti, aveWeek, parent=None):
         super().__init__(parent)
 
         self.caseNumber = case[0]
@@ -30,6 +30,7 @@ class CaseButton(QPushButton):
         self.ongoingCases = ongoingAveSenti
         self.estimatedScore = estimatedScore
         self.surveyProbability = surveyProbability
+        self.aveWeek = aveWeek
 
         if self.caseAge <= 3:
             self.caseAge = 5
@@ -118,7 +119,6 @@ class CustomerInfo(QWidget):
         hbox = QHBoxLayout()
         vbox = QVBoxLayout()
 
-        # TODO: Customize the shape of the button
         # Cutomer button
         buttonText = ("Customer: %s\nEmail: %s\nCompany: %s\nTAM: %s\nSurvey Probability: %s%%") \
                    % (name, email, company, tam, surveyProbability)
@@ -129,7 +129,6 @@ class CustomerInfo(QWidget):
 
         self.paramsScore = self.getCustomerScoreParameter(customerID)
         self.paramsSurvey = self.getCustomerSurveyParameter(customerID)
-        self.aveWeek = self.getWeeklyAverage(customerID)
 
         # Place the cases belong to current engineer in front of the list
         for i in range(0, len(relatedCases)):
@@ -146,8 +145,9 @@ class CustomerInfo(QWidget):
             estimatedScore = self.getEstimatedScoreFromAI(case, self.paramsScore)
             surveyProbability = self.getSurveyProbability(case, self.paramsSurvey)
             ongoingAveSenti = self.getOngoingCasesAverageSentimental(customerID, engineerAlias)
+            aveWeek = self.getWeeklyAverage(case[0])
 
-            caseBtn = CaseButton(case, estimatedScore, surveyProbability, ongoingAveSenti, self)
+            caseBtn = CaseButton(case, estimatedScore, surveyProbability, ongoingAveSenti, aveWeek, self)
 
             # if the case belong to current engineer
             if caseBtn.owner == engineerAlias:
@@ -193,7 +193,7 @@ class CustomerInfo(QWidget):
         value = [caseBtn.caseAge, caseBtn.idleTime, caseBtn.labor, caseBtn.customerSentimental,
                  caseBtn.recentCPE, caseBtn.ongoingCases]
         value = np.concatenate((value, [value[0]]))
-        aveWeek = self.aveWeek
+        aveWeek = [1, 2, 3, 4, 5, 3]
         aveWeek = np.concatenate((aveWeek, [aveWeek[0]]))
         angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False)
         angles = np.concatenate((angles, [angles[0]]))
@@ -244,15 +244,19 @@ class CustomerInfo(QWidget):
     def getSuggestionFromAI(self, caseBtn):
         suggestion = ""
 
-        # TODO: Better algorithm
-        if caseBtn.idleTime > 3:
-            suggestion += "Idle Time is too large!\n"
-        if caseBtn.caseAge > 3000:
-            suggestion += "Case Age is too large!\n"
-        if caseBtn.customerSentimental < 20:
-            suggestion += "Customer Sentimental is too small!\n"
-        if caseBtn.labor > 600:
-            suggestion += "Labor Time is too large!\n"
+        if caseBtn.estimatedScore < caseBtn.aveWeek[6]:
+            if caseBtn.caseAge > caseBtn.aveWeek[1]:
+                suggestion += "Case Age is too large!\n"
+            if caseBtn.idleTime > caseBtn.aveWeek[2]:
+                suggestion += "Idle Time is too large!\n"
+            if caseBtn.customerSentimental < caseBtn.aveWeek[3]:
+                suggestion += "Customer Sentimental is too small!\n"
+            if caseBtn.isResolved < caseBtn.aveWeek[4]:
+                suggestion += "IsResolved is too small!\n"
+            if caseBtn.labor > caseBtn.aveWeek[5]:
+                suggestion += "Labor Time is too large!\n"
+        else:
+            suggestion += "Everything is good!"
 
         return suggestion
 
@@ -287,7 +291,7 @@ class CustomerInfo(QWidget):
         return res if res else 100
 
     def getEstimatedScoreFromAI(self, case, params):
-        return 5
+        return 3
 
     def getSurveyProbability(self, case, params):
         return 50
@@ -298,5 +302,20 @@ class CustomerInfo(QWidget):
     def getCustomerSurveyParameter(self, customerID):
         return
 
-    def getWeeklyAverage(self, customerID):
-        return [1, 2, 3, 4, 5, 3]
+    def getWeeklyAverage(self, caseNumber):
+        cur = self.sqlcon.cursor()
+        sql = '''
+        with weekAve as (
+            (select * from iCSHD_Case_History_30) union all (select * from iCSHD_Case_History_29)
+            union all (select * from iCSHD_Case_History_28) union all (select * from iCSHD_Case_History_27)
+            union all (select * from iCSHD_Case_History_26) union all (select * from iCSHD_Case_History_25)
+            union all (select * from iCSHD_Case_History_24)
+        )
+
+        select CaseNumber, AVG(CaseAge), AVG(IdleTime), AVG(CustomerSentimental), AVG(IsResolved), AVG(Labor), AVG(EstimatedCPE)
+        from weekAve
+        where CaseNumber = '%s'
+        group by CaseNumber
+        ''' % caseNumber
+        cur.execute(sql)
+        return cur.fetchall()[0]
