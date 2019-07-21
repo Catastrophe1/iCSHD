@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-09 13:48:38
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-21 14:13:16
+@LastEditTime: 2019-07-21 14:36:09
 @Description: Implement the GUI of iCSHD
 '''
 
@@ -58,7 +58,7 @@ class MainWindow(QMainWindow):
 
         sql = '''
         select distinct iCSHD_Customer.CustomerId, iCSHD_Customer.Name,
-                        Email, SurveyProbability, Company, TAM
+                        Email, SurveyProbability, Company
         from iCSHD_Case, iCSHD_Customer, iCSHD_Engineer
         where iCSHD_Case.CustomerId = iCSHD_Customer.CustomerId
           and iCSHD_Case.EngineerId = iCSHD_Engineer.EngineerId

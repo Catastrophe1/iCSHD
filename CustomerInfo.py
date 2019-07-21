@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-13 23:06:18
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-21 14:20:29
+@LastEditTime: 2019-07-21 14:34:39
 @Description: file content
 '''
 
@@ -27,6 +27,7 @@ class CaseButton(QPushButton):
         self.isSLA = case[8]
         self.isFDR = case[9]
         self.labor = case[10]
+        self.tam = case[11]
         self.ongoingCases = ongoingAveSenti
         self.estimatedScore = estimatedScore
         self.surveyProbability = surveyProbability
@@ -88,8 +89,8 @@ class CaseButton(QPushButton):
         elif self.ongoingCases > 90:
             self.ongoingCases = 5
 
-        buttonText = "CaseID: %s\nEstimated Score: %s\nCase Owner: %s\nSurvey Probability: %s%%" \
-                    % (self.caseNumber, self.estimatedScore, self.owner, self.surveyProbability)
+        buttonText = "CaseID: %s\nTAM: %s\nEstimated Score: %s\nCase Owner: %s\nSurvey Probability: %s%%" \
+                    % (self.caseNumber, self.tam, self.estimatedScore, self.owner, self.surveyProbability)
         self.setText(buttonText)
 
 class CustomerInfo(QWidget):
@@ -103,7 +104,6 @@ class CustomerInfo(QWidget):
         email = customer[2]
         surveyProbability = customer[3]
         company = customer[4]
-        tam = customer[5]
         relatedCases = self.getRelatedCase(customerID)
 
         # Initialize parameters
@@ -120,8 +120,8 @@ class CustomerInfo(QWidget):
         vbox = QVBoxLayout()
 
         # Cutomer button
-        buttonText = ("Customer: %s\nEmail: %s\nCompany: %s\nTAM: %s\nSurvey Probability: %s%%") \
-                   % (name, email, company, tam, surveyProbability)
+        buttonText = ("Customer: %s\nEmail: %s\nCompany: %s\nSurvey Probability: %s%%") \
+                   % (name, email, company, surveyProbability)
         custBtn = QPushButton(buttonText, self)
         custBtn.setFixedSize(custBtnWidth, custBtnHeight)
         custBtn.clicked.connect(self.showParams)
@@ -265,7 +265,7 @@ class CustomerInfo(QWidget):
 
         sql = '''
         select CaseNumber, CaseAge, IdleTime, CustomerSentimental, ProductSupported,
-               RecentCPE, IsResolved, Alias, SlaState, isFDR, LABOR
+               RecentCPE, IsResolved, Alias, SlaState, isFDR, LABOR, TAM
         from iCSHD_Case, iCSHD_Customer, iCSHD_Engineer
         where iCSHD_Case.CustomerId = iCSHD_Customer.CustomerId
           and iCSHD_Customer.CustomerId = '%s'
