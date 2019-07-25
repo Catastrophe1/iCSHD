@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-13 23:06:18
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-25 09:59:54
+@LastEditTime: 2019-07-25 13:28:26
 @Description: file content
 '''
 
@@ -314,15 +314,15 @@ class CustomerInfo(QWidget):
 
         if caseBtn.estimatedScore < caseBtn.aveWeek[6]:
             if caseBtn.caseAge > caseBtn.aveWeek[1]:
-                suggestion += "Case Age is too large!\n"
+                suggestion += "Still not resolved? Shall we engage escalation for help?\n"
             if caseBtn.idleTime > caseBtn.aveWeek[2]:
-                suggestion += "Idle Time is too large!\n"
+                suggestion += "Customer seems to be expecting your response. Any findings to share with the customer?\n"
             if caseBtn.customerSentimental < caseBtn.aveWeek[3]:
-                suggestion += "Customer Sentimental is too small!\n"
+                suggestion += "Customer seems not very happy! Shall we engage the TA or TAM for recovery?\n"
             if caseBtn.isResolved < caseBtn.aveWeek[4]:
-                suggestion += "IsResolved is too small!\n"
+                suggestion += "Still no clue for this case? Do we need to check the knowledge base for help?\n"
             if caseBtn.labor > caseBtn.aveWeek[5]:
-                suggestion += "Labor Time is too large!\n"
+                suggestion += "We spent much more labor on this case than others. Do we need to talk to TAM for advice?\n"
         else:
             suggestion += "Everything is good!"
 
