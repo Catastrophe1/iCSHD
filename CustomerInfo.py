@@ -4,7 +4,7 @@
 @Author: t-zhel
 @Date: 2019-07-13 23:06:18
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-21 15:19:46
+@LastEditTime: 2019-07-25 09:41:38
 @Description: file content
 '''
 
@@ -98,9 +98,10 @@ class CaseButton(QPushButton):
         if QMouseEvent.button() == Qt.LeftButton:
             self.showGraph()
         elif QMouseEvent.button() == Qt.RightButton:
+            style = self.styleSheet()
             self.setStyleSheet("")
             QMessageBox.information(self, 'Message', 'Your comment has been saved', QMessageBox.Yes)
-            self.setStyleSheet("color: green; border: 2px groove blue;")
+            self.setStyleSheet(style)
   
     def showGraph(self):
         # TODO: why must import pyplot here
