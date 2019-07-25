@@ -4,10 +4,11 @@
 @Author: t-zhel
 @Date: 2019-07-13 23:06:18
 @LastEditor: t-zhel
-@LastEditTime: 2019-07-25 09:41:38
+@LastEditTime: 2019-07-25 09:59:54
 @Description: file content
 '''
 
+import random
 import numpy as np
 from PyQt5.QtWidgets import (QWidget, QPushButton, QTextEdit,
                              QHBoxLayout, QVBoxLayout, QMessageBox)
@@ -358,13 +359,15 @@ class CustomerInfo(QWidget):
         return res if res else 100
 
     def getEstimatedScoreFromAI(self, case, params):
-        return 3
+        return round(random.uniform(2, 4), 2)
 
     def getSurveyProbability(self, case, params):
-        return 50
+        return round(50 + random.uniform(0, 15), 2)
 
     def getCustomerScoreParameter(self, customerID):
-        return [1.5, 0.6, 7.8, 6, 5.2, 6.6, 3.1, 2.7, 1.9]
+        return [random.uniform(1, 3), random.uniform(1, 3), random.uniform(1, 3), random.uniform(1, 3),
+                random.uniform(1, 3), random.uniform(1, 3), random.uniform(1, 3), random.uniform(1, 3),
+                random.uniform(1, 3)]
 
     def getCustomerSurveyParameter(self, customerID):
         return
